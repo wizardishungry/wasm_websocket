@@ -2,7 +2,7 @@
 language: go
 
 env:
-- GO111MODULE=on GOOS=js GOARCH=wasm
+- GO111MODULE=on
 
 go:
 - 1.13.x
@@ -17,6 +17,7 @@ install:
 - export PATH=$GOPATH/bin:$PATH
 
 script:
+- export GOOS=js GOARCH=wasm
 - go test -v .
 - go vet .
 - gofmt -l -s -w .
