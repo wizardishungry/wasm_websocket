@@ -13,12 +13,12 @@ func TestMustGlobal(t *testing.T) {
 	}
 }
 
-func TestDoesntPanicOnConstructorError(t *testing.T) {
-	ws, err := Global(WebSocketArgs{url: "http://test.example.com/ws"})
-	if err == nil {
-		t.Fatalf("nil error returned by Global")
-	}
-	if ws != nil {
-		t.Fatalf("non-nil ws returned by bad call to Global")
-	}
-}
+// func TestDoesntPanicOnConstructorError(t *testing.T) {
+// 	ws, err := Global(WebSocketArgs{url: "http://test.example.com/ws"})
+// 	if err == nil {
+// 		t.Fatalf("nil error returned by Global")
+// 	}
+// 	if ws != nil {
+// 		t.Fatalf("non-nil ws returned by bad call to Global")
+// 	}
+// }
