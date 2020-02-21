@@ -48,23 +48,25 @@ func Wrap(constructor js.Value, wsa WebSocketArgs) (ws *WebSocket, err error) {
 		value: v,
 	}
 
-	ws.onOpen = regCb("onopen", v)
-	ws.onError = regCb("onerror", v)
-	ws.onMessage = regCb("onmessage", v)
-	ws.onClose = regCb("onclose", v)
+	ws.onOpen = ws.regCb("onopen")
+	ws.onError = ws.regCb("onerror")
+	ws.onMessage = ws.regCb("onmessage")
+	ws.onClose = ws.regCb("onclose")
 
 	// TODO finalizer to reap callbacks
 
 	return
 }
 
-func regCb(call string, v js.Value) chan interface{} {
+func (ws *WebSocket) regCb(call string) chan interface{} {
 	c := make(chan interface{})
-	v.Set(call, js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+	ws.value.Set(call, js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		fmt.Println(call)
 		if len(args) > 0 {
 			// https://developer.mozilla.org/en-US/docs/Web/API/Event
-			fmt.Println(call, "typez", args[0].Get("type").String())
+			fmt.Println(call, "type", args[0].Get("type").String())
+			fmt.Println(call, "ReadyState()", ws.ReadyState())
+
 			if m, err := asMap(args[0]); err == nil {
 				c <- m
 			} else {

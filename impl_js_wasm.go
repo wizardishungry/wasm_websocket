@@ -29,3 +29,28 @@ func (ws *WebSocket) OnMessage() <-chan interface{} {
 func (ws *WebSocket) OnClose() <-chan interface{} {
 	return ws.onClose
 }
+
+// ReadyState https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/readyState
+type ReadyState uint16
+
+const (
+	ReadyStateConnecting = iota
+	ReadyStateOpen
+	ReadyStateClosing
+	ReadyStateClosed
+)
+
+// ReadyState
+func (ws *WebSocket) ReadyState() ReadyState {
+	return ReadyState(ws.value.Get("readyState").Int())
+}
+
+// BufferedAmount
+func (ws *WebSocket) BufferedAmount() int {
+	return ws.value.Get("bufferedAmount").Int()
+}
+
+// Close
+func (ws *WebSocket) Close() {
+	ws.value.Call("close")
+}

@@ -12,11 +12,20 @@ func TestMustGlobal(t *testing.T) {
 	if ws == nil {
 		t.Fatalf("nil returned by Must")
 	}
-	select {
-	case e := <-ws.OnError():
-		fmt.Printf("onError z %+v\n", e)
-	case e := <-ws.OnOpen():
-		fmt.Println("onOpen ", e)
+	defer ws.Close()
+
+	for {
+		select {
+		case e := <-ws.OnClose():
+			fmt.Println("OnClose! ", e)
+			return
+		case e := <-ws.OnError():
+			fmt.Println("OnError ", e)
+		case e := <-ws.OnOpen():
+			fmt.Println("onOpen ", e)
+		case e := <-ws.OnMessage():
+			fmt.Println("OnMessage ", e)
+		}
 	}
 }
 
