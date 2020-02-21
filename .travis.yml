@@ -2,9 +2,7 @@
 language: go
 
 env:
-- GO111MODULE=on
-- GOOS=js
-- GOARCH=wasm 
+- GO111MODULE=on GOOS=js GOARCH=wasm
 
 go:
 - 1.13.x
