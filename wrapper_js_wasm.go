@@ -5,14 +5,6 @@ import (
 	"syscall/js"
 )
 
-func global() js.Value {
-	return js.Global()
-}
-
-type WebSocket struct {
-	value js.Value
-}
-
 // WebSocketArgs arguments https://developer.mozilla.org/en-US/docs/Web/API/WebSocket/WebSocket
 type WebSocketArgs struct {
 	url       string
@@ -44,13 +36,41 @@ func Wrap(constructor js.Value, wsa WebSocketArgs) (ws *WebSocket, err error) {
 	}()
 
 	if t := constructor.Type(); t != js.TypeFunction {
-		return nil, fmt.Errorf("constructor is not js.TypeFunction")
+		return nil, fmt.Errorf("constructor is not js.TypeFunction (was %s)", t)
 	}
 	v := constructor.New(wsa.args())
 	if t := v.Type(); t != js.TypeObject {
-		return nil, fmt.Errorf("WebSocket type is not js.TypeObject")
+		return nil, fmt.Errorf("WebSocket type is not js.TypeObject (was %s)", t)
 	}
-	return &WebSocket{v}, nil
+
+	ws = &WebSocket{
+		value:   v,
+		onOpen:  make(chan interface{}),
+		onError: make(chan interface{}),
+	}
+
+	v.Set("onopen", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		fmt.Println("onopen")
+		if len(args) > 0 {
+			ws.onOpen <- args[0]
+		}
+		return nil
+	}))
+
+	v.Set("onerror", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		fmt.Println("onerror")
+		if len(args) > 0 {
+			// https://developer.mozilla.org/en-US/docs/Web/API/Event
+			fmt.Println("onerror type", args[0].Get("type").String())
+
+			ws.onError <- args[0]
+		}
+		return nil
+	}))
+
+	// TODO finalizer to reap callbacks
+
+	return
 }
 
 // Must is used for simplifying panic chains
