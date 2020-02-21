@@ -1,6 +1,7 @@
 package wasm_websocket
 
 import (
+	"encoding/json"
 	"fmt"
 	"syscall/js"
 )
@@ -44,33 +45,33 @@ func Wrap(constructor js.Value, wsa WebSocketArgs) (ws *WebSocket, err error) {
 	}
 
 	ws = &WebSocket{
-		value:   v,
-		onOpen:  make(chan interface{}),
-		onError: make(chan interface{}),
+		value: v,
 	}
 
-	v.Set("onopen", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		fmt.Println("onopen")
-		if len(args) > 0 {
-			ws.onOpen <- args[0]
-		}
-		return nil
-	}))
-
-	v.Set("onerror", js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		fmt.Println("onerror")
-		if len(args) > 0 {
-			// https://developer.mozilla.org/en-US/docs/Web/API/Event
-			fmt.Println("onerror type", args[0].Get("type").String())
-
-			ws.onError <- args[0]
-		}
-		return nil
-	}))
+	ws.onOpen = regCb("onopen", v)
+	ws.onError = regCb("onerror", v)
 
 	// TODO finalizer to reap callbacks
 
 	return
+}
+
+func regCb(call string, v js.Value) chan interface{} {
+	c := make(chan interface{})
+	v.Set(call, js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		fmt.Println(call)
+		if len(args) > 0 {
+			// https://developer.mozilla.org/en-US/docs/Web/API/Event
+			fmt.Println(call, "typez", args[0].Get("type").String())
+			if m, err := asMap(args[0]); err == nil {
+				c <- m
+			} else {
+				fmt.Println("asMap error", err)
+			}
+		}
+		return nil
+	}))
+	return c
 }
 
 // Must is used for simplifying panic chains
@@ -79,4 +80,13 @@ func Must(ws *WebSocket, err error) *WebSocket {
 		panic(fmt.Errorf("wasm_websocket.Must: %w", err))
 	}
 	return ws
+}
+
+// asMap holy hacks
+func asMap(v js.Value) (map[string]interface{}, error) {
+	// todo panic/recover?
+	s := js.Global().Get("JSON").Call("stringify", v).String()
+	m := make(map[string]interface{})
+	err := json.Unmarshal([]byte(s), &m)
+	return m, err
 }

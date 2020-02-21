@@ -5,7 +5,8 @@ import (
 )
 
 type WebSocket struct {
-	value                               js.Value
+	value js.Value
+
 	onOpen, onClose, onMessage, onError chan interface{}
 }
 
