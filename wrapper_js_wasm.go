@@ -50,6 +50,8 @@ func Wrap(constructor js.Value, wsa WebSocketArgs) (ws *WebSocket, err error) {
 
 	ws.onOpen = regCb("onopen", v)
 	ws.onError = regCb("onerror", v)
+	ws.onMessage = regCb("onmessage", v)
+	ws.onClose = regCb("onclose", v)
 
 	// TODO finalizer to reap callbacks
 

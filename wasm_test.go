@@ -21,7 +21,6 @@ func TestMustGlobal(t *testing.T) {
 }
 
 func TestDoesntPanicOnConstructorError(t *testing.T) {
-
 	ws, err := Global(WebSocketArgs{url: "http://test.example.com/ws"})
 	if err == nil {
 		t.Fatalf("nil error returned by Global")
@@ -29,4 +28,5 @@ func TestDoesntPanicOnConstructorError(t *testing.T) {
 	if ws != nil {
 		t.Fatalf("non-nil ws returned by bad call to Global")
 	}
+	fmt.Println(err.Error())
 }
