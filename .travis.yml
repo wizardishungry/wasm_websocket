@@ -19,6 +19,8 @@ install:
 - cp $GOPATH/bin/wasmbrowsertest $GOPATH/bin/go_js_wasm_exec
 
 script:
+- export GOROOT=~/go
+- export PATH=$GOROOT/bin:$PATH
 - GOOS=js GOARCH=wasm go vet .
 - GOOS=js GOARCH=wasm gofmt -l -s -w .
 - GOOS=js GOARCH=wasm go test -exec wasmbrowsertest -v -x .
