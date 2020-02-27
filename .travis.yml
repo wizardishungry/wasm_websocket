@@ -4,9 +4,9 @@ language: go
 addons:
   chrome: stable
 
-cache:
-  directories:
-  - $GOPATH
+# cache:
+#   directories:
+#   - $GOPATH
 
 install:
 - echo '8405d748b7b56720b004c18087576a24b7eab057725c03c8160b949d239c6ee4 go.tar.gz'  | sha256sum -c || (rm go.tar.gz; wget -O go.tar.gz https://dl.google.com/go/go1.14.linux-amd64.tar.gz)
@@ -25,6 +25,12 @@ script:
 - go version
 - go env
 - which go
+- wget -O go.tar.gz https://dl.google.com/go/go1.14.linux-amd64.tar.gz
+- mkdir ~/gocode
+- tar -C ~/gocode -xzf go.tar.gz
+- rm go.tar.gz
+- export GOROOT=~/gocode/go
+- export PATH=$GOROOT/bin:$PATH
 - GOOS=js GOARCH=wasm go vet .
 - GOOS=js GOARCH=wasm gofmt -l -s -w .
 - GOOS=js GOARCH=wasm $(which go) test -exec wasmbrowsertest -v -x .
