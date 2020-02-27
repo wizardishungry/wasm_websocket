@@ -27,4 +27,4 @@ script:
 - which go
 - GOOS=js GOARCH=wasm go vet .
 - GOOS=js GOARCH=wasm gofmt -l -s -w .
-- GOOS=js GOARCH=wasm go test -exec wasmbrowsertest -v -x .
+- GOOS=js GOARCH=wasm $(which go) test -exec wasmbrowsertest -v -x .
