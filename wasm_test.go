@@ -2,13 +2,37 @@ package wasm_websocket
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
+
+	"github.com/WIZARDISHUNGRY/wasm_websocket/internal"
 )
 
-// avoid t.Parallel https://travis-ci.community/t/goos-js-goarch-wasm-go-run-fails-panic-newosproc-not-implemented/1651
+// avoid t.Parallel
+// TestMain doesn't work with wasmbrowsertest
+func testURL() string {
+	fmt.Println("wss://" + internal.GetServerAddr() + "/ws")
+	return "ws://" + internal.GetServerAddr() + "/ws"
+}
+
+func quitURL() string {
+	return "http://" + internal.GetServerAddr() + "/quit"
+}
+func upURL() string {
+	return "http://" + internal.GetServerAddr() + "/"
+}
+
+func TestAaaFirst(t *testing.T) {
+
+	_, err := http.Get(upURL())
+	if err != nil {
+		t.Fatalf("error connecting to local http service! %v", err)
+	}
+
+}
 
 func TestMustGlobal(t *testing.T) {
-	ws := Must(Global(WebSocketArgs{url: "wss://test.example.com/ws"}))
+	ws := Must(Global(WebSocketArgs{url: testURL()}))
 	if ws == nil {
 		t.Fatalf("nil returned by Must")
 	}
@@ -30,7 +54,7 @@ func TestMustGlobal(t *testing.T) {
 }
 
 func TestDoesntPanicOnConstructorError(t *testing.T) {
-	ws, err := Global(WebSocketArgs{url: "http://test.example.com/ws"})
+	ws, err := Global(WebSocketArgs{url: testURL()})
 	if err == nil {
 		t.Fatalf("nil error returned by Global")
 	}
@@ -38,4 +62,13 @@ func TestDoesntPanicOnConstructorError(t *testing.T) {
 		t.Fatalf("non-nil ws returned by bad call to Global")
 	}
 	fmt.Println(err.Error())
+}
+
+func TestZzzQuitService(t *testing.T) {
+
+	_, err := http.Get(quitURL())
+	if err != nil {
+		t.Errorf("error closing local http service %v", err.Error())
+	}
+
 }

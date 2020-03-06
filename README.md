@@ -7,5 +7,7 @@ golang wrapper for using browser WebSocket from WebAssembly build target
 Use [wasmbrowsertest](https://github.com/agnivade/wasmbrowsertest).
 ```bash
 go get github.com/agnivade/wasmbrowsertest
-GOOS=js GOARCH=wasm go test -exec wasmbrowsertest
+go test -v ./internal/... -count 1 &
+GOOS=js GOARCH=wasm go test -v -exec wasmbrowsertest
 ```
+Right now the test case doesn't exit because the server never quits.
