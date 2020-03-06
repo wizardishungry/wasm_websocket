@@ -48,17 +48,33 @@ func Wrap(constructor js.Value, wsa WebSocketArgs) (ws *WebSocket, err error) {
 		value: v,
 	}
 
-	ws.onOpen = ws.regCb("onopen")
-	ws.onError = ws.regCb("onerror")
-	ws.onMessage = ws.regCb("onmessage")
-	ws.onClose = ws.regCb("onclose")
+	{
+		ws.onOpen = ws.regCb("onopen", identityMapper)
+		ws.onOpenC = make(chan struct{})
+		go func() {
+			for _ = range ws.onOpen {
+				ws.onOpenC <- struct{}{}
+			}
+		}()
+	}
+	ws.onError = ws.regCb("onerror", asMap)
+	{
+		ws.onMessage = ws.regCb("onmessage", messageEventDataAsString)
+		ws.onMessageC = make(chan string)
+		go func() {
+			for v := range ws.onMessage {
+				ws.onMessageC <- v.(string)
+			}
+		}()
+	}
+	ws.onClose = ws.regCb("onclose", asMap)
 
 	// TODO finalizer to reap callbacks
 
 	return
 }
 
-func (ws *WebSocket) regCb(call string) chan interface{} {
+func (ws *WebSocket) regCb(call string, mapper func(value js.Value) (interface{}, error)) chan interface{} {
 	c := make(chan interface{})
 	ws.value.Set(call, js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		fmt.Println(call)
@@ -67,15 +83,40 @@ func (ws *WebSocket) regCb(call string) chan interface{} {
 			fmt.Println(call, "type", args[0].Get("type").String())
 			fmt.Println(call, "ReadyState()", ws.ReadyState())
 
-			if m, err := asMap(args[0]); err == nil {
-				c <- m
+			if len(args) > 0 {
+				val := args[0]
+				if m, err := mapper(val); err == nil {
+					c <- m
+				} else {
+					fmt.Println("regCb mapper error", err)
+				}
 			} else {
-				fmt.Println("asMap error", err)
+				fmt.Println("regCb callback got less than 1 argument")
 			}
 		}
 		return nil
 	}))
 	return c
+}
+
+// NOOP
+func identityMapper(v js.Value) (interface{}, error) {
+	return v, nil
+}
+
+// https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent
+func messageEventDataAsString(v js.Value) (interface{}, error) {
+	fmt.Println("data type is", v.Get("data").Type())
+	return v.Get("data").String(), nil
+}
+
+// asMap holy hacks
+func asMap(v js.Value) (interface{}, error) {
+	// todo panic/recover?
+	s := js.Global().Get("JSON").Call("stringify", v).String()
+	m := make(map[string]interface{})
+	err := json.Unmarshal([]byte(s), &m)
+	return m, err
 }
 
 // Must is used for simplifying panic chains
@@ -84,13 +125,4 @@ func Must(ws *WebSocket, err error) *WebSocket {
 		panic(fmt.Errorf("wasm_websocket.Must: %w", err))
 	}
 	return ws
-}
-
-// asMap holy hacks
-func asMap(v js.Value) (map[string]interface{}, error) {
-	// todo panic/recover?
-	s := js.Global().Get("JSON").Call("stringify", v).String()
-	m := make(map[string]interface{})
-	err := json.Unmarshal([]byte(s), &m)
-	return m, err
 }

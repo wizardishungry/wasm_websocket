@@ -1,6 +1,7 @@
 package wasm_websocket
 
 import (
+	"fmt"
 	"syscall/js"
 )
 
@@ -8,11 +9,14 @@ type WebSocket struct {
 	value js.Value
 
 	onOpen, onClose, onMessage, onError chan interface{}
+
+	onOpenC    chan struct{}
+	onMessageC chan string
 }
 
 // OnOpen
-func (ws *WebSocket) OnOpen() <-chan interface{} {
-	return ws.onOpen
+func (ws *WebSocket) OnOpen() <-chan struct{} {
+	return ws.onOpenC
 }
 
 // OnError
@@ -21,8 +25,8 @@ func (ws *WebSocket) OnError() <-chan interface{} {
 }
 
 // OnMessage
-func (ws *WebSocket) OnMessage() <-chan interface{} {
-	return ws.onMessage
+func (ws *WebSocket) OnMessage() <-chan string {
+	return ws.onMessageC
 }
 
 // OnClose
@@ -53,4 +57,22 @@ func (ws *WebSocket) BufferedAmount() int {
 // Close
 func (ws *WebSocket) Close() {
 	ws.value.Call("close")
+}
+
+// Send
+func (ws *WebSocket) Send(v interface{}) (err error) {
+	switch t := v.(type) {
+	case string:
+	default:
+		return fmt.Errorf("type unsupported %T!", t)
+	}
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("send error %v", r)
+		}
+	}()
+
+	ws.value.Call("send", js.ValueOf(v))
+	return nil
 }

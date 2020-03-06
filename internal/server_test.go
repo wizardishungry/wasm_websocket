@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/websocket"
@@ -46,13 +45,21 @@ func TestMustGlobal(t *testing.T) {
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
+	headers(w)
+	fmt.Println(r)
+}
+
+func headers(w http.ResponseWriter) {
+	w.Header().Add("Access-Control-Allow-Origin", "*")
 }
 
 func quit(w http.ResponseWriter, r *http.Request) {
-	go func() {
-		time.Sleep(time.Second)
+	headers(w)
+	defer func() {
+		//	go func() {
 		errors <- server.Close()
 		close(errors)
+		//	}()
 	}()
 }
 
@@ -64,17 +71,35 @@ func ws(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	defer c.Close()
-	for {
+
+	{
+		err := c.WriteMessage(websocket.TextMessage, []byte("text message"))
+		if err != nil {
+			errors <- fmt.Errorf("write txt: %w", err)
+			return
+		}
+	}
+
+	{
+		err := c.WriteMessage(websocket.BinaryMessage, []byte("binary message")) // unsupported so far
+		if err != nil {
+			errors <- fmt.Errorf("write bin: %w", err)
+			return
+		}
+	}
+
+	{
 		mt, message, err := c.ReadMessage()
 		if err != nil {
-			log.Println("read:", err)
-			break
+			errors <- fmt.Errorf("read: %w", err)
+			return
 		}
 		log.Printf("recv: %s", message)
+
 		err = c.WriteMessage(mt, message)
 		if err != nil {
-			log.Println("write:", err)
-			break
+			errors <- fmt.Errorf("write: %w", err)
+			return
 		}
 	}
 }
