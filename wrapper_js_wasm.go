@@ -58,6 +58,7 @@ func Wrap(constructor js.Value, wsa WebSocketArgs) (ws *WebSocket, err error) {
 		}()
 	}
 	ws.onError = ws.regCb("onerror", asMap)
+
 	{
 		ws.onMessage = ws.regCb("onmessage", messageEventDataAsString)
 		ws.onMessageC = make(chan string)
@@ -106,8 +107,8 @@ func identityMapper(v js.Value) (interface{}, error) {
 
 // https://developer.mozilla.org/en-US/docs/Web/API/MessageEvent
 func messageEventDataAsString(v js.Value) (interface{}, error) {
-	fmt.Println("data type is", v.Get("data").Type())
-	return v.Get("data").String(), nil
+	data := v.Get("data")
+	return data.String(), nil // binary messages don't work TODO
 }
 
 // asMap holy hacks

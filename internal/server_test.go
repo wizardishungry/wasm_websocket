@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -81,7 +82,16 @@ func ws(w http.ResponseWriter, r *http.Request) {
 	}
 
 	{
-		err := c.WriteMessage(websocket.BinaryMessage, []byte("binary message")) // unsupported so far
+		data := struct {
+			UserMeta string `json:"u"`
+			Status   string `json:"status"`
+		}{UserMeta: "meta", Status: "very cool"}
+		bytes, err := json.Marshal(data)
+		if err != nil {
+			errors <- fmt.Errorf("json marshall: %w", err)
+			return
+		}
+		err = c.WriteMessage(websocket.BinaryMessage, bytes) // unsupported on other side so far?
 		if err != nil {
 			errors <- fmt.Errorf("write bin: %w", err)
 			return
